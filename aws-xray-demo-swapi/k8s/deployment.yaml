@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xray-demo
+  labels:
+    app: xray-demo
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: xray-demo
+  template:
+    metadata:
+      labels:
+        app: xray-demo
+    spec:
+      terminationGracePeriodSeconds: 300 # 5 minutes
+      imagePullSecrets:
+        - name: artifactory
+      containers:
+        - name: xray-demo
+          env:
+            - name: AWS_XRAY_DAEMON_ADDRESS
+              value: xray-service.amazon-cloudwatch.svc.cluster.local:2000
+          image: upmce-docker-local-v2.jfrog.io/myupmc/xray-demo:0.0.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
